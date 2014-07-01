@@ -4,6 +4,7 @@ var router = express.Router();
 var vineTrack = require('../models/vine');
 
 var scrap = require('../lib/scrap');
+var retrieve = require('../lib/retrieve');
 
 router.get('/v/:postId', function(req, res) {
 	
@@ -22,14 +23,14 @@ router.get('/v/:postId', function(req, res) {
 	});
 });
 
-// Task 1
+// Task 1 : Tested
 router.post('/scrap/:postId',function(req,res){
 	vineTrack.findOne({postId : req.params.postId},function(err,vine){
 		if (err)
 			res.json({sucess : false, error : err});
 		else { // If there is no error
 			if (vine) { // If the vine is in the database, send it to the client
-				res.json({sucess : true, vinetrack : vine });
+				res.json({success : true, vinetrack : vine });
 			} 
 			else { // The vine is not in the database, scrap the videoURL from the postId
 
@@ -40,7 +41,7 @@ router.post('/scrap/:postId',function(req,res){
 						var vine = new  vineTrack({postId : req.params.postId, videoURL : videoURL});
 						vine.save(function(err,vine){
 							if (err)
-								res.json({sucess :false, error : err});
+								res.json({success :false, error : err});
 							else {
 								res.json({success : true, vinetrack : vine });
 							}
@@ -54,8 +55,30 @@ router.post('/scrap/:postId',function(req,res){
 
 });
 
-// Task 2
+// Task 2 : not thoroughly tested
 router.post('/rtv/:postId',function(req,res){
+	vineTrack.findOne({postId : req.params.postId},function(err,vine){
+		if (err)
+			res.json({sucess : false, error : err});
+		else {
+
+			if (vine) { // If the vine is in the database, download it and convert it to MP3
+				retrieve(vine,function(err,status){
+					if (err) // If an error happened while downloading/converting the file
+						res.json({ success : false, error : err});
+
+					else { // If the download & conversion went well
+						res.json({ sucess : true, vinetrack : vine})
+					}
+				})
+			}
+
+			else { // The vine is not in the database, do not process it. 
+				res.json({sucess : false, error : "The vine is not in the database"});
+			}
+
+		}
+	});
 
 });
 

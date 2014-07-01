@@ -1,2 +1,4 @@
 node_modules
 bin
+tmp/mp3/
+tmp/mp4/
