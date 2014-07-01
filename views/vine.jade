@@ -1,0 +1,7 @@
+extends layout
+
+block content
+  h1 VineTrack
+  p Details about vine : #{postId}
+  iframe(class="vine-embed",src="https://vine.co/v/#{postId}/embed/simple",width="600",height="600",frameborder="0")
+  script(async,src="//platform.vine.co/static/scripts/embed.js",charset="utf-8")
