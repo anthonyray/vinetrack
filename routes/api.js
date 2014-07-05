@@ -5,6 +5,7 @@ var vineTrack = require('../models/vine');
 
 var scrap = require('../lib/scrap');
 var retrieve = require('../lib/retrieve');
+var analyze = require('../lib/analyze');
 
 router.get('/v/:postId', function(req, res) {
 	
@@ -59,7 +60,7 @@ router.post('/scrap/:postId',function(req,res){
 router.post('/rtv/:postId',function(req,res){
 	vineTrack.findOne({postId : req.params.postId},function(err,vine){
 		if (err)
-			res.json({sucess : false, error : err});
+			res.json({succcess : false, error : err});
 		else {
 
 			if (vine) { // If the vine is in the database, download it and convert it to MP3
@@ -68,7 +69,7 @@ router.post('/rtv/:postId',function(req,res){
 						res.json({ success : false, error : err});
 
 					else { // If the download & conversion went well
-						res.json({ sucess : true, vinetrack : vine})
+						res.json({ success : true, vinetrack : vine})
 					}
 				})
 			}
@@ -80,6 +81,59 @@ router.post('/rtv/:postId',function(req,res){
 		}
 	});
 
+});
+
+// Task 3
+
+router.post('/analyze/:postId',function(req,res) {
+	vineTrack.findOne({postId : req.params.postId},function(err,vine) {
+		if(err) {
+			res.json({success : false, error : err });
+		}
+		else {
+			if (vine) { // If the vine is in the database
+				if ( vine.hasOwnProperty('track') ) { // The track has been analyzed at least once
+					if ( (vine.track.artist != '') && (vine.track.title != '') ){ // The song has been analyzed correctly, no need to analyze it once again
+						res.json({success : true, vinetrack : vine });
+					}
+					else { // The song has been partially analyzed 
+						if (vine.track.echonest_Id) { // If the vine has a echonest Id
+							analyze.FromEchoNestId(vine, function(err,analyzedvine){
+								if (err){
+									res.json({success : false, error : err});
+								}
+								else {
+									analyzedvine.save(function(err,savedvine){
+										if (err){
+											res.json({success : false, error : err});
+										}
+										else {
+											res.json({success : true, vine : savedvine});
+										}
+									});
+								}
+							});
+						}
+
+					}
+				}
+				else { // The track has never been analyzed
+					analyze.FromFile(vine, function(err,analyzedvine){
+						analyzedvine.save(function(err,savedvine){
+							if (err)
+								res.json({success : false, error : err});
+							else
+								res.json({success : true, vine : savedvine });
+						})
+					});
+
+				}
+			}
+			else { // If the vine is not in the database, do not analyze it 
+				res.json({success : false, error : "The vine is not in the database"});
+			}
+		}
+	});
 });
 
 module.exports = router;
